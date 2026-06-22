@@ -77,8 +77,9 @@ SAB/Atomics channel with ordinary `postMessage`:
 Trade-offs: Asyncify adds some Wasm size/overhead (fine for an editor). The
 **system clipboard** works — clipboard write is a fire-and-forget postMessage,
 and clipboard read is an async (Asyncify) round-trip, the same pattern as the
-input wait. The editor sets `clipboard=unnamed` so y/d/p use the system
-clipboard via the `*` register (the `+` register's read path is an upstream stub).
+input wait (`clip_mch_request_selection` was implemented in `gui_wasm.c`). The
+`+` register is the system clipboard, as in real Vim; default y/d/p stay in the
+in-memory unnamed register.
 **jsevalfunc** remains disabled (it needed a synchronous result round-trip).
 
 **Result (verified):** the editor boots, loads the field text, edits, and writes
@@ -172,10 +173,9 @@ select `wasavi/src/chrome`. Activate on a textarea with **Ctrl+Enter** / **Inser
 
 ## Known limitations
 
-* **Clipboard**: the system clipboard works (read via an async round-trip, write
-  fire-and-forget); the editor uses `clipboard=unnamed` (the `*` register). The
-  `+` register read is an upstream stub. **jsevalfunc** is still disabled (it
-  needed a synchronous result).
+* **Clipboard**: the `+`/`*` register is the system clipboard (read + write), as
+  in real Vim; default y/d/p use the in-memory register. **jsevalfunc** is still
+  disabled (it needed a synchronous result round-trip).
 * **Cursor restoration**: the cursor starts at the top of the buffer; the host
   element's selection offset isn't yet mapped to a Vim line/column.
 * **Options page**: `options.html` still uses the old Kosian frontend and isn't
