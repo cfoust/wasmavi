@@ -20,7 +20,36 @@ VIM="$ROOT/vim.wasm"
 WASM="$VIM/wasm"
 DEST="$ROOT/src/chrome/frontend/vim-wasm"
 
-source ~/emsdk/emsdk_env.sh
+# Pin the emscripten toolchain. This engine's Asyncify runtime (worker exit
+# detection, the default _malloc/runtime-method exports) is sensitive to the
+# emscripten version; newer SDKs change those defaults and break `:q` and
+# memory allocation. 3.1.8 is the known-good version — keep all builds on it.
+EMSDK_VERSION="3.1.8"
+EMSDK="${EMSDK:-$HOME/emsdk}"
+
+if [ ! -f "$EMSDK/emsdk_env.sh" ]; then
+    echo "error: emsdk not found at '$EMSDK'." >&2
+    echo "  Install it (git clone https://github.com/emscripten-core/emsdk) and/or" >&2
+    echo "  set EMSDK=/path/to/emsdk, then re-run." >&2
+    exit 1
+fi
+
+# Activate the pinned version (installing it first if needed). Both are no-ops
+# when 3.1.8 is already installed and active, so this stays fast on rebuilds.
+if ! "$EMSDK/emsdk" activate "$EMSDK_VERSION" >/dev/null 2>&1; then
+    echo "build-vim-wasm.sh: installing emscripten $EMSDK_VERSION ..."
+    "$EMSDK/emsdk" install "$EMSDK_VERSION"
+    "$EMSDK/emsdk" activate "$EMSDK_VERSION"
+fi
+
+source "$EMSDK/emsdk_env.sh"
+
+ACTIVE_VERSION="$(emcc --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+if [ "$ACTIVE_VERSION" != "$EMSDK_VERSION" ]; then
+    echo "error: active emscripten is '$ACTIVE_VERSION', expected '$EMSDK_VERSION'." >&2
+    echo "  Run: \"$EMSDK/emsdk\" install $EMSDK_VERSION && \"$EMSDK/emsdk\" activate $EMSDK_VERSION" >&2
+    exit 1
+fi
 
 configure() {
     cd "$VIM"
@@ -64,8 +93,8 @@ link() {
         -sINVOKE_RUN=1 -sEXIT_RUNTIME=1 -sALLOW_MEMORY_GROWTH=1 \
         -sASYNCIFY -sASYNCIFY_STACK_SIZE=65536 \
         "-sASYNCIFY_IMPORTS=['vimwasm_wait_for_event']" \
-        "-sEXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown','_gui_wasm_handle_drop','_gui_wasm_set_clip_avail','_gui_wasm_do_cmdline','_gui_wasm_emsg']" \
-        "-sEXPORTED_RUNTIME_METHODS=['cwrap']" \
+        "-sEXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown','_gui_wasm_handle_drop','_gui_wasm_set_clip_avail','_gui_wasm_do_cmdline','_gui_wasm_emsg','_malloc','_free']" \
+        "-sEXPORTED_RUNTIME_METHODS=['cwrap','ccall','UTF8ToString','stringToUTF8','lengthBytesUTF8','HEAPU8']" \
         --preload-file usr --preload-file tutor --preload-file home \
         -Os
 }
