@@ -74,9 +74,12 @@ SAB/Atomics channel with ordinary `postMessage`:
   `postMessage`; `checkBrowserCompatibility()` no longer requires SAB.
 * Built with `-sASYNCIFY` (see `scripts/build-vim-wasm.sh`).
 
-Trade-offs: Asyncify adds some Wasm size/overhead (fine for an editor); system
-**clipboard read** and **jsevalfunc** (which needed synchronous round-trips) are
-disabled — Vim's own registers/yank still work.
+Trade-offs: Asyncify adds some Wasm size/overhead (fine for an editor). The
+**system clipboard** works — clipboard write is a fire-and-forget postMessage,
+and clipboard read is an async (Asyncify) round-trip, the same pattern as the
+input wait. The editor sets `clipboard=unnamed` so y/d/p use the system
+clipboard via the `*` register (the `+` register's read path is an upstream stub).
+**jsevalfunc** remains disabled (it needed a synchronous result round-trip).
 
 **Result (verified):** the editor boots, loads the field text, edits, and writes
 back on a page with `crossOriginIsolated === false`.
@@ -169,9 +172,10 @@ select `wasavi/src/chrome`. Activate on a textarea with **Ctrl+Enter** / **Inser
 
 ## Known limitations
 
-* **Clipboard / jsevalfunc**: system-clipboard read and `jsevalfunc()` are
-  disabled in the Asyncify build (they required synchronous SAB round-trips);
-  Vim's internal registers work normally.
+* **Clipboard**: the system clipboard works (read via an async round-trip, write
+  fire-and-forget); the editor uses `clipboard=unnamed` (the `*` register). The
+  `+` register read is an upstream stub. **jsevalfunc** is still disabled (it
+  needed a synchronous result).
 * **Cursor restoration**: the cursor starts at the top of the buffer; the host
   element's selection offset isn't yet mapped to a Vim line/column.
 * **Options page**: `options.html` still uses the old Kosian frontend and isn't
