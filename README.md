@@ -31,15 +31,24 @@ What this fork adds:
 
 The compiled vim.wasm engine and the bundled `.js` are generated artifacts and
 are intentionally not committed — build them with [Bun](https://bun.sh) and the
-[emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html):
+[emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html).
+
+The Asyncify runtime is pinned to **emscripten 3.1.8** (newer SDKs change
+default exports and the program-exit path, which breaks `:q` and memory
+allocation). `build:wasm` auto-activates 3.1.8 from your emsdk install (set
+`EMSDK=/path/to/emsdk` if it isn't at `~/emsdk`) and aborts if the active
+version differs.
 
 ```sh
 git clone --recursive https://github.com/cfoust/wasmavi.git
 cd wasmavi
 bun install
-bun run build:wasm   # builds vim.wasm (Asyncify) from the ./vim.wasm submodule; needs emsdk active
+bun run build:wasm   # builds vim.wasm (Asyncify) from the ./vim.wasm submodule; pins emsdk 3.1.8
 bun run build        # bundles the extension TypeScript -> JavaScript
 ```
+
+Or, with [just](https://github.com/casey/just), `just build` runs all three
+steps (`bun install` + engine + extension); `just --list` shows the rest.
 
 Then load `src/chrome` as an unpacked extension (`chrome://extensions` →
 Developer mode → Load unpacked). `bun run test` / `bun run typecheck` cover the
