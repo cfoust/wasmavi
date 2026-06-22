@@ -1,8 +1,18 @@
+<p align="center">
+  <img src="docs/wasmavi.png" alt="wasmavi: real Vim editing a code field in a web app" width="860">
+</p>
+
 # wasmavi — wasavi, but the editor is real Vim (WebAssembly)
 
-**wasmavi is a fork of [wasavi](https://github.com/akahuku/wasavi) that replaces
-its hand-written JavaScript vi engine with actual Vim compiled to WebAssembly
-([vim.wasm](https://github.com/rhysd/vim.wasm)).** The name is *wasavi* + *WASM*.
+**wasmavi is a browser extension (Chrome / Firefox) that turns any web page's
+text field into a real Vim editor.** It's a fork of
+[wasavi](https://github.com/akahuku/wasavi) that replaces wasavi's hand-written
+JavaScript vi engine with actual Vim compiled to WebAssembly
+([vim.wasm](https://github.com/rhysd/vim.wasm)). The name is *wasavi* + *WASM*.
+
+Press the activation key (Ctrl+Enter or Insert) in a `<textarea>` — or in a
+Monaco code editor like LeetCode or CoderPad — and you're editing in Vim;
+`:w` writes your text back to the page, `:q` closes the editor.
 
 What this fork adds:
 

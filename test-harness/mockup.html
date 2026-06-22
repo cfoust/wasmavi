@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>wasmavi — mockup</title>
+<style>
+	:root { color-scheme: dark; }
+	* { box-sizing: border-box; }
+	html, body { margin: 0; height: 100%; }
+	body {
+		display: flex; align-items: center; justify-content: center;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+		background: radial-gradient(1200px 700px at 70% -10%, #2a2350 0%, #15172a 45%, #0b0d18 100%);
+		color: #e7e9f3;
+	}
+
+	/* app window */
+	.window {
+		width: 1080px; height: 640px;
+		background: #14161f;
+		border: 1px solid #2a2e3f;
+		border-radius: 14px;
+		box-shadow: 0 30px 80px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02) inset;
+		overflow: hidden;
+		display: flex; flex-direction: column;
+	}
+	.titlebar {
+		height: 44px; flex: none; display: flex; align-items: center; gap: 14px;
+		padding: 0 16px; background: #1b1e2b; border-bottom: 1px solid #2a2e3f;
+	}
+	.lights { display: flex; gap: 8px; }
+	.lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+	.lights .r { background: #ff5f57; } .lights .y { background: #febc2e; } .lights .g { background: #28c840; }
+	.addr {
+		flex: 1; text-align: center; font-size: 13px; color: #9aa0b5;
+		background: #11131c; border: 1px solid #2a2e3f; border-radius: 7px;
+		padding: 5px 10px; max-width: 460px; margin: 0 auto;
+	}
+	.addr b { color: #c7ccde; font-weight: 600; }
+
+	.body { flex: 1; display: flex; min-height: 0; }
+
+	/* left: problem prompt */
+	.prompt {
+		width: 340px; flex: none; padding: 26px 26px; border-right: 1px solid #232735;
+		background: linear-gradient(180deg, #161927, #12141e);
+		overflow: hidden;
+	}
+	.kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #7c84a3; }
+	.prompt h1 { font-size: 21px; margin: 8px 0 14px; color: #f3f4fa; }
+	.prompt p { font-size: 14px; line-height: 1.7; color: #aeb4ca; margin: 0 0 14px; }
+	.prompt code { background: #232a3d; color: #b9c4e2; padding: 1px 6px; border-radius: 5px; font-size: 12.5px; }
+	.pill { display:inline-block; font-size:12px; color:#9fe7c6; background:#13362a; border:1px solid #1f5a45; padding:3px 10px; border-radius: 999px; margin-top: 6px;}
+
+	/* right: editor */
+	.editor { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #0e1020; }
+	.tabs { height: 40px; flex: none; display: flex; align-items: stretch; background: #12141f; border-bottom: 1px solid #232735; }
+	.tab { display: flex; align-items: center; gap: 8px; padding: 0 18px; font-size: 13px; color: #cdd2e6;
+		background: #0e1020; border-right: 1px solid #232735; }
+	.tab .dot { width: 8px; height: 8px; border-radius: 50%; background: #f6c177; }
+	.tab .lang { color: #7c84a3; font-size: 12px; }
+	.run { margin-left: auto; align-self: center; margin-right: 12px; font-size: 12.5px; font-weight: 600;
+		color: #0c1f17; background: linear-gradient(180deg,#56e39f,#2fcf86); padding: 6px 14px; border-radius: 7px; }
+
+	.screen-wrap { flex: 1; position: relative; min-height: 0; }
+	#screen { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+	#kbd { position: absolute; opacity: 0; width: 1px; height: 1px; }
+
+	/* badge pointing at the editor */
+	.badge {
+		position: absolute; right: 18px; bottom: 16px; z-index: 5;
+		display: flex; align-items: center; gap: 9px;
+		font-size: 13px; color: #e7e9f3;
+		background: rgba(20,22,33,.82); backdrop-filter: blur(6px);
+		border: 1px solid #3a3f57; border-radius: 999px; padding: 7px 14px 7px 11px;
+		box-shadow: 0 8px 24px -8px rgba(0,0,0,.6);
+	}
+	.badge .v { display:grid; place-items:center; width: 22px; height: 22px; border-radius: 6px;
+		background: linear-gradient(135deg,#7c5cff,#43b0ff); font-weight: 800; font-size: 12px; color: #fff; }
+	.badge b { font-weight: 700; } .badge span { color: #9aa0b5; }
+</style>
+</head>
+<body>
+	<div class="window">
+		<div class="titlebar">
+			<div class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+			<div class="addr">🔒 <b>interview.example.com</b>/session/lru-cache</div>
+		</div>
+		<div class="body">
+			<div class="prompt">
+				<div class="kicker">Problem · Medium</div>
+				<h1>LRU Cache</h1>
+				<p>Design a data structure for a <b>Least Recently Used (LRU) cache</b>.
+				Implement <code>get</code> and <code>put</code> in O(1) average time.</p>
+				<p><code>get(key)</code> returns the value if present, else <code>-1</code>.
+				<code>put(key, value)</code> inserts or updates, evicting the least‑recently‑used
+				entry when over capacity.</p>
+				<span class="pill">● wasmavi active — edit with Vim</span>
+			</div>
+			<div class="editor">
+				<div class="tabs">
+					<div class="tab"><span class="dot"></span> main.py <span class="lang">python</span></div>
+					<div class="run">Run ▸</div>
+				</div>
+				<div class="screen-wrap">
+					<canvas id="screen"></canvas>
+					<input id="kbd" autocomplete="off">
+					<div class="badge"><span class="v">w</span> <b>wasmavi</b> <span>· real Vim, in the browser</span></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+<script type="module">
+import { VimWasm } from '../src/chrome/frontend/vim-wasm/vimwasm.js';
+
+const code = [
+	'from dataclasses import dataclass',
+	'',
+	'',
+	'class LRUCache:',
+	'    def __init__(self, capacity: int):',
+	'        self.cap = capacity',
+	'        self.cache = {}            # key -> value',
+	'        self.order = []            # most-recent at the end',
+	'',
+	'    def get(self, key: int) -> int:',
+	'        if key not in self.cache:',
+	'            return -1',
+	'        self.order.remove(key)',
+	'        self.order.append(key)',
+	'        return self.cache[key]',
+	'',
+	'    def put(self, key: int, value: int) -> None:',
+	'        if key in self.cache:',
+	'            self.order.remove(key)',
+	'        elif len(self.cache) >= self.cap:',
+	'            oldest = self.order.pop(0)',
+	'            del self.cache[oldest]',
+	'        self.cache[key] = value',
+	'        self.order.append(key)',
+	''
+].join('\n');
+
+const vimrc = [
+	'set nocompatible',
+	'filetype plugin indent on',
+	'syntax enable',
+	'set number',
+	'set laststatus=2',
+	'set cursorline',
+	'silent! colorscheme vividchalk',
+	''
+].join('\n');
+
+const vim = new VimWasm({
+	canvas: document.getElementById('screen'),
+	input: document.getElementById('kbd'),
+	workerScriptPath: '../src/chrome/frontend/vim-wasm/vim.js',
+});
+vim.onVimInit = () => { setTimeout(() => { window.__vimReady = true; }, 700); };
+vim.onError = e => console.error(e);
+
+vim.start({
+	clipboard: false,
+	dirs: ['/home/web_user/.vim/colors'],
+	files: {
+		'/home/web_user/main.py': code,
+		'/home/web_user/.vim/vimrc': vimrc,
+	},
+	fetchFiles: { '/home/web_user/.vim/colors/vividchalk.vim': '../src/chrome/frontend/colors/vividchalk.vim' },
+	cmdArgs: ['/home/web_user/main.py'],
+});
+</script>
+</body>
+</html>
