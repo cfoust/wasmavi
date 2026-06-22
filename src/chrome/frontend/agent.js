@@ -863,6 +863,12 @@ var Agent = (function () {
 			'overflow', 'hidden',
 			'visibility', 'hidden',
 			'zIndex', 0x7fffffff);
+		// Delegate the async Clipboard API to the (cross-origin) editor frame.
+		// The default Permissions-Policy allowlist for clipboard-read/-write is
+		// "self", so without this a chrome-extension:// iframe is denied
+		// navigator.clipboard. (Hosts that send a restrictive Permissions-Policy
+		// header can still override this; the frame falls back to execCommand.)
+		this.wasaviFrame.setAttribute('allow', 'clipboard-read; clipboard-write');
 		this.wasaviFrame.src = extension.urlInfo.frameSource;
 		document.body.appendChild(this.wasaviFrame);
 

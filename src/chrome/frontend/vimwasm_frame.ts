@@ -191,6 +191,55 @@ declare const WasaviExtensionWrapper: any;
 		}, false);
 	}
 
+	// ----------------------------------------------------------------------
+	// system clipboard ("+/"* registers)
+	//
+	// The async Clipboard API is gated by Permissions Policy; on hosts that
+	// disable clipboard-read/-write for this (cross-origin extension) frame the
+	// promise rejects. Writes fall back to the legacy synchronous execCommand,
+	// which is not Permissions-Policy gated and is permitted by the extension's
+	// clipboardWrite permission. Reads have no such fallback (execCommand
+	// 'paste' is blocked in content), so a blocked read resolves to '' and the
+	// "+ register simply comes back empty rather than throwing.
+	// ----------------------------------------------------------------------
+	function writeClipboard (text: string): Promise<void> {
+		var nav: any = navigator;
+		if (nav.clipboard && nav.clipboard.writeText) {
+			return nav.clipboard.writeText(text).catch(function () {
+				execCopy(text);
+			});
+		}
+		execCopy(text);
+		return Promise.resolve();
+	}
+
+	function readClipboard (): Promise<string> {
+		var nav: any = navigator;
+		if (nav.clipboard && nav.clipboard.readText) {
+			return nav.clipboard.readText().catch(function () { return ''; });
+		}
+		return Promise.resolve('');
+	}
+
+	// Legacy copy via a throwaway textarea + execCommand('copy'). Synchronous
+	// and exempt from the async-clipboard Permissions Policy.
+	function execCopy (text: string) {
+		try {
+			var ta = document.createElement('textarea');
+			ta.value = text;
+			ta.style.position = 'fixed';
+			ta.style.opacity = '0';
+			document.body.appendChild(ta);
+			ta.focus();
+			ta.select();
+			document.execCommand('copy');
+			document.body.removeChild(ta);
+			// restore focus to the editor input
+			$('wasavi_input').focus();
+		}
+		catch (e) {}
+	}
+
 	function startVim () {
 		// Prefer a filename the agent derived from the editor (e.g. main.py from a
 		// Monaco data-uri or data-mode-id) so Vim detects the filetype; otherwise
@@ -226,10 +275,8 @@ declare const WasaviExtensionWrapper: any;
 		vim.onFileExport = onFileExport;
 		vim.onError = showError;
 		vim.onTitleUpdate = function (title) { document.title = title; };
-		if (navigator.clipboard) {
-			vim.readClipboard = function () { return navigator.clipboard.readText(); };
-			vim.onWriteClipboard = function (text) { navigator.clipboard.writeText(text); };
-		}
+		vim.readClipboard = readClipboard;
+		vim.onWriteClipboard = writeClipboard;
 
 		// Export the buffer on every successful write so the host element is
 		// kept in sync, exactly like ":w" in the original engine.
@@ -249,7 +296,7 @@ declare const WasaviExtensionWrapper: any;
 		// vim.data image, and FS.mkdir() on it throws ("FS error"). ~/.vim is
 		// created by the runtime; ~/.vim/colors is not, so create it here.
 		vim.start({
-			clipboard: !!navigator.clipboard,
+			clipboard: true,
 			dirs: [dotvim + '/colors'],
 			files: files,
 			fetchFiles: fetchFiles,
