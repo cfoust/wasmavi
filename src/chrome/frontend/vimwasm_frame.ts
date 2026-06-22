@@ -209,6 +209,10 @@ declare const WasaviExtensionWrapper: any;
 			'set nocompatible\n' +
 			'filetype plugin indent on\n' +
 			'syntax enable\n' +
+			// route y/p through the system clipboard via the "*" register, which
+			// has a working read path (the "+" register read is not wired in the
+			// engine). Override in exrc if undesired.
+			'set clipboard=unnamed\n' +
 			'silent! colorscheme vividchalk\n' +
 			(typeof exrc === 'string' ? exrc : '') + '\n';
 
