@@ -1,0 +1,145 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>wasavi activation simulator</title>
+</head>
+<body>
+<h1>coderpad (monaco EditContext) activation simulator</h1>
+<!-- Newer Monaco: the keyboard target is a <div class="native-edit-context"> -->
+<div class="monaco-editor" data-mode-id="python3" role="code" style="width:404px;height:321px;position:relative;">
+  <div class="overflow-guard" style="width:404px;height:321px;">
+    <div class="native-edit-context" role="textbox" tabindex="0" aria-multiline="true"
+      autocorrect="off" autocapitalize="off" autocomplete="off" spellcheck="false"
+      style="position:absolute;top:63px;left:55px;width:683px;height:21px;"></div>
+    <textarea class="ime-text-area" readonly tabindex="-1" aria-hidden="true"></textarea>
+  </div>
+</div>
+<div id="ready">loading…</div>
+
+<script>
+// Minimal window.monaco mock (mirrors LeetCode's API surface used by the bridge).
+(function () {
+  var modelValue = 'class LRUCache:\n    def __init__(self, capacity):\n        pass\n';
+  var model = { setValue: function (v) { modelValue = v; window.__monacoSet = v; } };
+  var editor = {
+    getDomNode: function () { return document.querySelector('.monaco-editor'); },
+    getValue: function () { return modelValue; },
+    getModel: function () { return model; },
+    setValue: function (v) { model.setValue(v); },
+  };
+  window.monaco = { editor: { getEditors: function () { return [editor]; } } };
+})();
+</script>
+
+<script>
+/*
+ * Reproduces the extension's activation chain on an ordinary page so we can
+ * debug "nothing happens on the activation key" without loading the unpacked
+ * extension. It runs the REAL agent.js + sw.js with a chrome shim:
+ *   - the page (agent) talks to a real sw.js instance via chrome.runtime
+ *   - sw.js reaches the agent via tabs.sendMessage / runtime broadcast
+ * The editor iframe is stubbed (we only verify activation fires the handshake).
+ */
+const BASE = '/src/chrome/';
+const log = (...a) => { console.log('[sim]', ...a); };
+
+// ---- two-sided chrome shim ------------------------------------------------
+let swListener = null;          // sw.js onMessage
+const pageListeners = [];       // agent onMessage (content script side)
+const storage = { sync: {}, local: {}, session: {} };
+function mkStorageArea(bag) {
+  return {
+    get: (keys, cb) => {
+      let out = {};
+      if (typeof keys === 'string') out[keys] = bag[keys];
+      else if (Array.isArray(keys)) keys.forEach(k => out[k] = bag[k]);
+      else if (keys && typeof keys === 'object') { out = Object.assign({}, keys); for (const k in out) if (k in bag) out[k] = bag[k]; }
+      cb && cb(out);
+    },
+    set: (obj, cb) => { Object.assign(bag, obj); cb && cb(); },
+    clear: (cb) => { for (const k in bag) delete bag[k]; cb && cb(); },
+  };
+}
+let frameWin = null;            // the editor iframe's contentWindow
+const swChrome = {
+  runtime: {
+    id: 'simextid',
+    lastError: undefined,
+    getManifest: () => ({ version: '0.0.1' }),
+    getURL: p => location.origin + '/' + BASE.replace(/^\//, '') + p,
+    onMessage: { addListener: fn => { swListener = fn; } },
+    // sw -> frame broadcast (agent -> frame path)
+    sendMessage: (payload, cb) => { deliverToFrame(payload); cb && cb(undefined); },
+  },
+  storage: { sync: mkStorageArea(storage.sync), local: mkStorageArea(storage.local),
+             session: mkStorageArea(storage.session), onChanged: { addListener() {} } },
+  tabs: {
+    // frame -> agent path
+    sendMessage: (tabId, payload, cb) => { const r = deliverToAgent(payload); cb && setTimeout(() => cb(r), 0); },
+    query: (_q, cb) => cb([{ id: 1 }]),
+  },
+};
+function deliverToAgent(payload) {
+  let response;
+  for (const l of pageListeners.slice()) {
+    try { l(payload, { id: 'simextid' }, (r) => { response = r; }); } catch (e) { console.error('[sim] agent listener error', e); }
+  }
+  return response;
+}
+function deliverToFrame(payload) {
+  if (frameWin) frameWin.postMessage({ __b: 'toFrame', payload }, '*');
+}
+// bridge: editor iframe <-> sw (the iframe runs the real frame with a chrome shim)
+window.addEventListener('message', e => {
+  const d = e.data;
+  if (!d || d.__b !== 'toSW') return;
+  frameWin = e.source;
+  // fake a chrome-extension sender.url so sw routes frame->agent via tabs.sendMessage
+  const keepOpen = swListener(d.msg, { tab: { id: 1, url: location.href }, url: 'chrome-extension://simextid/wasavi.html', frameId: 1 },
+    (r) => { e.source.postMessage({ __b: 'resp', id: d.id, r }, '*'); });
+  void keepOpen;
+});
+const pageChrome = {
+  runtime: {
+    id: 'simextid',
+    lastError: undefined,
+    getURL: p => location.origin + '/' + BASE.replace(/^\//, '') + p,
+    // agent -> sw
+    sendMessage: (msg, cb) => {
+      if (!swListener) { console.error('[sim] SW not ready'); return; }
+      const keepOpen = swListener(msg, { tab: { id: 1 }, url: location.href, frameId: 0 }, (r) => { cb && cb(r); });
+      // if handler is sync and returned no value, fire cb(undefined)
+      if (keepOpen !== true && cb) { /* sync responders already called cb */ }
+    },
+    onMessage: { addListener: fn => { pageListeners.push(fn); }, removeListener: fn => { const i = pageListeners.indexOf(fn); if (i >= 0) pageListeners.splice(i, 1); } },
+  },
+  i18n: { getMessage: id => id },
+};
+window.chrome = pageChrome;
+
+// ---- boot: load sw.js, then the content-script files ----------------------
+(async () => {
+  const swCode = await (await fetch(BASE + 'backend/sw.js')).text();
+  new Function('chrome', swCode)(swChrome);
+  log('sw.js loaded; listener:', typeof swListener);
+
+  // count iframes the agent creates (activation succeeded if one appears)
+  const origCreate = document.createElement.bind(document);
+  window.__wasaviFrames = 0;
+  document.createElement = function (tag) {
+    const el = origCreate(tag);
+    if (String(tag).toLowerCase() === 'iframe') { window.__wasaviFrames++; log('iframe created (activation fired):', el.src || '(src pending)'); }
+    return el;
+  };
+
+  for (const src of ['frontend/extension_wrapper.js', 'frontend/agent.js']) {
+    await new Promise((res, rej) => { const s = origCreate('script'); s.src = BASE + src; s.onload = res; s.onerror = () => rej(new Error('load failed: ' + src)); document.head.appendChild(s); });
+    log('loaded', src);
+  }
+  document.getElementById('ready').textContent = 'ready';
+  window.__simReady = true;
+})().catch(e => { console.error('[sim] boot error', e); document.getElementById('ready').textContent = 'error: ' + e.message; });
+</script>
+</body>
+</html>

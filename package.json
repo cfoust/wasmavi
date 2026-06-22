@@ -1,24 +1,21 @@
 {
-  "name": "wasavi",
-  "version": "0.0.1",
-  "description": "the vi editor in your browser",
-  "homepage": "http://appsweets.net/wasavi/",
+  "name": "wasmavi",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "wasavi, but the editor is real Vim compiled to WebAssembly (vim.wasm)",
   "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/akahuku/wasavi.git"
-  },
-  "dependencies": {
-    "unistring": "akahuku/unistring",
-    "marked": "akahuku/marked",
-    "qeema": "akahuku/qeema"
+  "homepage": "https://github.com/cfoust/wasmavi",
+  "repository": { "type": "git", "url": "https://github.com/cfoust/wasmavi.git" },
+  "scripts": {
+    "build": "bun run build.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun run test-harness/sw.test.ts",
+    "build:wasm": "bash scripts/build-vim-wasm.sh"
   },
   "devDependencies": {
-    "brisket": "akahuku/brisket",
-    "copy-paste": "^1.3.0"
-  },
-  "scripts": {
-    "install": "./distribute-scripts",
-    "update": "./distribute-scripts"
+    "@types/bun": "latest",
+    "@types/chrome": "latest",
+    "typescript": "^5.7.0"
   }
 }

@@ -1,3 +1,6 @@
 [submodule "src/chrome/backend/lib/kosian"]
 	path = src/chrome/backend/lib/kosian
 	url = git@github.com:akahuku/kosian.git
+[submodule "vim.wasm"]
+	path = vim.wasm
+	url = git@github.com:cfoust/vim.wasm.git

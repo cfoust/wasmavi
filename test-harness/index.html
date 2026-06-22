@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>wasavi + vim.wasm test harness</title>
+<style>
+	body { font: 14px/1.5 system-ui, sans-serif; margin: 24px; color: #222; }
+	h1 { font-size: 18px; }
+	textarea { width: 100%; height: 160px; box-sizing: border-box; font: 13px/1.4 monospace; }
+	button { font: 14px sans-serif; padding: 6px 14px; margin: 8px 0; cursor: pointer; }
+	#status { color: #666; min-height: 1.4em; }
+	.note { color: #666; font-size: 13px; }
+
+	/* the vim.wasm editor overlay */
+	#editor {
+		position: fixed; inset: 0; display: none; background: #1d1f21; z-index: 9999;
+	}
+	#editor.open { display: block; }
+	#screen { display: block; width: 100%; height: 100%; }
+	#kbd {
+		position: absolute; top: 0; left: 0; width: 1px; height: 1px;
+		opacity: 0; border: none; outline: none; color: transparent; background: transparent;
+	}
+</style>
+</head>
+<body>
+	<h1>wasavi &rarr; vim.wasm test harness</h1>
+	<p class="note">
+		This page demonstrates the same data flow the extension uses: the textarea
+		content is loaded into vim.wasm, and every <code>:w</code> writes the buffer
+		back to the textarea. Quit with <code>:q</code> / <code>:wq</code>.
+		Served with COOP/COEP so <code>SharedArrayBuffer</code> is available.
+	</p>
+
+	<label for="ta"><b>Edit me:</b></label>
+	<textarea id="ta">The quick brown fox jumps over the lazy dog.
+
+Edit this with vim.wasm, then :wq to write it back here.
+Try: dd, o, i, :%s/fox/cat/g, etc.
+</textarea>
+
+	<div>
+		<button id="open">Edit with vim.wasm &nbsp;(:wq writes back)</button>
+	</div>
+	<div id="status"></div>
+
+	<!-- vim.wasm editor overlay -->
+	<div id="editor">
+		<canvas id="screen"></canvas>
+		<input id="kbd" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+	</div>
+
+<script type="module">
+import {VimWasm, checkBrowserCompatibility} from '../src/chrome/frontend/vim-wasm/vimwasm.js';
+
+const WORKER = '../src/chrome/frontend/vim-wasm/vim.js';
+const HOME = '/home/web_user';
+const FILE = HOME + '/buffer.txt';
+
+const ta = document.getElementById('ta');
+const editor = document.getElementById('editor');
+const statusEl = document.getElementById('status');
+let vim = null;
+
+function status(msg) { statusEl.textContent = msg; }
+
+document.getElementById('open').addEventListener('click', () => {
+	const incompatible = checkBrowserCompatibility();
+	if (incompatible) {
+		status('Cannot start vim.wasm: ' + incompatible +
+			' (is the page cross-origin isolated? crossOriginIsolated=' +
+			window.crossOriginIsolated + ')');
+		return;
+	}
+	if (vim) return;
+
+	editor.classList.add('open');
+	status('starting vim.wasm…');
+
+	vim = new VimWasm({
+		canvas: document.getElementById('screen'),
+		input: document.getElementById('kbd'),
+		workerScriptPath: WORKER,
+	});
+
+	vim.onVimInit = () => { status('vim running — :w writes back to the textarea, :q quits'); vim.focus(); };
+
+	// every successful :w exports the buffer; copy it back to the textarea
+	vim.onFileExport = (fullpath, contents) => {
+		ta.value = new TextDecoder('utf-8').decode(new Uint8Array(contents));
+		status('wrote ' + contents.byteLength + ' bytes back to the textarea (' +
+			new Date().toLocaleTimeString() + ')');
+	};
+
+	vim.onVimExit = () => {
+		editor.classList.remove('open');
+		vim = null;
+		status('vim exited — textarea now holds the edited text');
+	};
+
+	vim.onError = (err) => { status('vim error: ' + (err && err.message || err)); };
+	if (navigator.clipboard) {
+		vim.readClipboard = () => navigator.clipboard.readText();
+		vim.onWriteClipboard = (t) => navigator.clipboard.writeText(t);
+	}
+
+	const files = {}; files[FILE] = ta.value;
+	const autocmd = "autocmd BufWritePost * silent! execute 'export ' . fnameescape(expand('%:p'))";
+
+	vim.start({
+		clipboard: !!navigator.clipboard,
+		files,
+		cmdArgs: ['-n', '-c', autocmd, FILE],
+	});
+});
+</script>
+</body>
+</html>

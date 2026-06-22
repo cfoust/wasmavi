@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2020", "DOM", "WebWorker"],
+    "types": ["chrome", "bun"],
+    "strict": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowJs": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/chrome/frontend/vimwasm_frame.ts",
+    "src/chrome/backend/sw.ts",
+    "build.ts",
+    "test-harness/**/*.ts"
+  ]
+}
