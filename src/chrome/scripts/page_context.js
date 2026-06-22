@@ -54,9 +54,7 @@ function getMonacoNamespace () {
 				if (ex.default && ex.default.editor && typeof ex.default.editor.getEditors === 'function') { cachedNamespace = ex.default; break; }
 			}
 		}
-	} catch (ex) {
-		console.warn('[wasavi-monaco] webpack namespace probe failed:', ex);
-	}
+	} catch (ex) {}
 	return cachedNamespace;
 }
 
@@ -97,21 +95,30 @@ function scanForEditor (o, depth, seen) {
 }
 
 // Find the Monaco editor instance whose DOM node corresponds to `node`.
+// Resolving via React fiber can be costly on large apps, so cache the result
+// while it stays attached to the document.
+var cachedEditor = null;
 function findMonacoEditor (node) {
+	if (cachedEditor) {
+		try {
+			var d = cachedEditor.getDomNode();
+			if (d && doc.contains(d)) return cachedEditor;
+		} catch (ex) {}
+		cachedEditor = null;
+	}
 	var ns = getMonacoNamespace();
 	if (ns) {
 		try {
 			var editors = ns.editor.getEditors();
 			for (var i = 0; i < editors.length; i++) {
 				var dom = editors[i].getDomNode && editors[i].getDomNode();
-				if (dom && (dom === node || node.contains(dom) || dom.contains(node))) return editors[i];
+				if (dom && (dom === node || node.contains(dom) || dom.contains(node))) return (cachedEditor = editors[i]);
 			}
-			if (editors.length) return editors[0];
+			if (editors.length) return (cachedEditor = editors[0]);
 		} catch (ex) {}
 	}
 	var viaFiber = findEditorViaReactFiber(node);
-	if (viaFiber) return viaFiber;
-	console.warn('[wasavi-monaco] could not reach a Monaco editor (no global, webpack, or React fiber match)');
+	if (viaFiber) return (cachedEditor = viaFiber);
 	return null;
 }
 
@@ -141,9 +148,7 @@ doc.addEventListener('WasaviRequestGetContent', function (e) {
 		if (!result) {
 			var vl = readViewLines(node);
 			if (vl != null) result = vl;
-			if (vl != null) console.warn('[wasavi-monaco] using .view-lines fallback (visible lines only; write-back will not work)');
 		}
-		console.log('[wasavi-monaco] read: editor=' + !!ed + ' length=' + (result ? result.length : 0));
 	}
 
 	var ev = doc.createEvent('CustomEvent');
