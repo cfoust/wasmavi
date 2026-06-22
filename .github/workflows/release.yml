@@ -1,0 +1,29 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build extension
+        uses: ./.github/actions/build
+
+      - name: Package extension
+        run: |
+          cd src/chrome
+          zip -r "$GITHUB_WORKSPACE/wasmavi-chrome-${GITHUB_REF_NAME}.zip" .
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wasmavi-chrome-*.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true

@@ -29,3 +29,38 @@ typecheck:
 # Run the service-worker tests.
 test:
     bun run test
+
+# Cut a release: derive a CalVer version (YYYY.M.D, with a .N suffix for the
+# Nth release in a day), write it to package.json + manifest.json, commit, tag,
+# and push. CI (release.yml) then builds the extension and publishes the release.
+# Usage: `just tag`
+tag:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # 10# forces base-10 so 08/09 don't parse as invalid octal; this also strips
+    # the leading zeros Chrome's manifest version forbids.
+    base="$(date +%Y).$((10#$(date +%m))).$((10#$(date +%d)))"
+    ver="$base"
+    if git rev-parse -q --verify "refs/tags/v$ver" >/dev/null; then
+        n=1
+        while git rev-parse -q --verify "refs/tags/v$base.$n" >/dev/null; do
+            n=$((n + 1))
+        done
+        ver="$base.$n"
+    fi
+    echo "Releasing v$ver"
+    bun -e '
+        const fs = require("fs");
+        const v = process.argv[1];
+        for (const f of ["package.json", "src/chrome/manifest.json"]) {
+            const s = fs.readFileSync(f, "utf8");
+            const next = s.replace(/("version":\s*")[^"]*(")/, `$1${v}$2`);
+            if (next === s) throw new Error(`no version field updated in ${f}`);
+            fs.writeFileSync(f, next);
+        }
+    ' "$ver"
+    git commit -m "chore(release): v$ver" -- package.json src/chrome/manifest.json
+    git tag -a "v$ver" -m "v$ver"
+    git push origin HEAD
+    git push origin "v$ver"
+    echo "Pushed v$ver — CI will build and publish the release."

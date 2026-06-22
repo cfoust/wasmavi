@@ -100,6 +100,9 @@ link() {
 }
 
 deploy() {
+    # The deploy target holds generated files and is gitignored, so it does not
+    # exist on a fresh checkout (e.g. CI). Create it before copying.
+    mkdir -p "$DEST"
     cp "$WASM/vim.js" "$WASM/vim.wasm" "$WASM/vim.data" "$WASM/vimwasm.js" "$DEST/"
     echo "Deployed Asyncify vim.wasm engine to $DEST"
     ls -la "$DEST"/vim.js "$DEST"/vim.wasm "$DEST"/vim.data "$DEST"/vimwasm.js
