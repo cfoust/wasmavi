@@ -43,6 +43,7 @@ declare const WasaviExtensionWrapper: any;
 	var filePath = '';         // path of the buffer file in MEMFS
 	var terminated = false;
 	var fullscreen = false;    // false = render over the text field; true = maximize
+	var exrc = '';             // startup Vimscript (vimrc), from the options page
 
 	function $ (id: string): any {
 		return document.getElementById(id);
@@ -118,6 +119,7 @@ declare const WasaviExtensionWrapper: any;
 		// wasavi.js does this in install(). mirror it here.
 		channel.tabId = req.tabId;
 		fullscreen = !!req.fullscreen;
+		exrc = typeof req.exrc === 'string' ? req.exrc : '';
 		channel.setMessageListener(handleBackendMessage);
 
 		if (channel.isTopFrame()) {
@@ -193,8 +195,16 @@ declare const WasaviExtensionWrapper: any;
 		var name = sanitizeName(boot.id || boot.nodeName || 'buffer') + '.txt';
 		filePath = HOME + '/' + name;
 
+		var dotvim = HOME + '/.vim';
 		var files = {};
 		files[filePath] = typeof boot.value === 'string' ? boot.value : '';
+		// The editor's vimrc: sensible defaults, a bundled colorscheme, then the
+		// user's startup Vimscript (the "exrc" field in the options page).
+		files[dotvim + '/vimrc'] =
+			'set nocompatible\n' +
+			'syntax enable\n' +
+			'silent! colorscheme vividchalk\n' +
+			(typeof exrc === 'string' ? exrc : '') + '\n';
 
 		vim = new VimWasm({
 			canvas: $('wasavi_screen'),
@@ -221,11 +231,19 @@ declare const WasaviExtensionWrapper: any;
 		if (boot.readOnly) cmdArgs.push('-R');
 		cmdArgs.push(filePath);
 
+		// Fetch the bundled colorscheme(s) into ~/.vim/colors so `colorscheme`
+		// works. The worker fetches these before Vim's main loop starts.
+		var fetchFiles = {};
+		fetchFiles[dotvim + '/colors/vividchalk.vim'] = resourceURL('frontend/colors/vividchalk.vim');
+
 		// NOTE: do not pass dirs:[HOME] - /home/web_user already exists in the
-		// vim.data image, and FS.mkdir() on it throws ("FS error").
+		// vim.data image, and FS.mkdir() on it throws ("FS error"). ~/.vim is
+		// created by the runtime; ~/.vim/colors is not, so create it here.
 		vim.start({
 			clipboard: !!navigator.clipboard,
+			dirs: [dotvim + '/colors'],
 			files: files,
+			fetchFiles: fetchFiles,
 			cmdArgs: cmdArgs
 		});
 	}

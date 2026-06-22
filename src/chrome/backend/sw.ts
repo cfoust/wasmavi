@@ -92,7 +92,9 @@ function loadConfig () {
 			siteOverrides: false,
 			logMode: false,
 			// false = render in the text field's area; true = full screen
-			fullscreen: false
+			fullscreen: false,
+			// startup Vimscript (becomes the editor's vimrc)
+			exrc: ''
 		}, items => {
 			void chrome.runtime.lastError;
 			configCache = {
@@ -103,7 +105,8 @@ function loadConfig () {
 				quickActivation: !!items.quickActivation,
 				siteOverrides: items.siteOverrides || false,
 				logMode: !!items.logMode,
-				fullscreen: !!items.fullscreen
+				fullscreen: !!items.fullscreen,
+				exrc: typeof items.exrc === 'string' ? items.exrc : ''
 			};
 			resolve(configCache);
 		});
@@ -175,6 +178,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
 				extensionId: chrome.runtime.id,
 				fontFamily: cfg.fontFamily,
 				fullscreen: cfg.fullscreen,
+				exrc: cfg.exrc,
 				payload: payload || null
 			});
 		});
@@ -184,7 +188,6 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
 	case 'init-options':
 		loadConfig().then(cfg => sendResponse(Object.assign({
 			tabId: tabId,
-			exrc: '" exrc for wasavi',
 			upgradeNotify: false,
 			// options-core.js does req.fstab.filter(...); the online file systems
 			// aren't wired up to the MV3 worker, so expose just the local one.
