@@ -585,10 +585,19 @@ function isAcceptable (key) {
 	return key in ACCEPTABLE_TYPES && allowedElements[ACCEPTABLE_TYPES[key]];
 }
 
+function isMonacoInput (target) {
+	// Monaco's keyboard target is either a hidden <textarea class="inputarea">
+	// (older builds, e.g. LeetCode) or a <div class="native-edit-context">
+	// using the EditContext API (newer builds, e.g. CoderPad). Either way it
+	// lives inside a .monaco-editor container.
+	return !!(target && target.closest && target.closest('.monaco-editor'));
+}
+
 function isLaunchableElement (target) {
 	return target.isContentEditable && allowedElements.enableContentEditable
 		|| target.nodeName == 'BODY' && allowedElements.enablePage
-		|| /^(?:TEXTAREA|INPUT)$/.test(target.nodeName) && isAcceptable(target.type);
+		|| /^(?:TEXTAREA|INPUT)$/.test(target.nodeName) && isAcceptable(target.type)
+		|| isMonacoInput(target) && allowedElements.enableTextArea;
 }
 
 function doesTargetAllowLaunch (target) {
