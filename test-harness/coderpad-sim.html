@@ -21,12 +21,14 @@
 // Minimal window.monaco mock (mirrors LeetCode's API surface used by the bridge).
 (function () {
   var modelValue = 'class LRUCache:\n    def __init__(self, capacity):\n        pass\n';
-  var model = { setValue: function (v) { modelValue = v; window.__monacoSet = v; } };
+  var model = { setValue: function (v) { modelValue = v; window.__monacoSet = v; window.__via = 'setValue'; }, getFullModelRange: function () { return { sl:1 }; } };
   var editor = {
     getDomNode: function () { return document.querySelector('.monaco-editor'); },
     getValue: function () { return modelValue; },
     getModel: function () { return model; },
     setValue: function (v) { model.setValue(v); },
+    pushUndoStop: function () {},
+    executeEdits: function (src, edits) { modelValue = edits[0].text; window.__monacoSet = modelValue; window.__via = 'executeEdits'; return true; },
   };
   window.monaco = { editor: { getEditors: function () { return [editor]; } } };
 })();

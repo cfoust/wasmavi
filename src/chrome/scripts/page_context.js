@@ -170,12 +170,26 @@ doc.addEventListener('WasaviRequestSetContent', function (e) {
 		try {win.ace.edit(node).setValue(content)} catch(ex) {}
 	else if (node.classList.contains('monaco-editor')) {
 		var ed = findMonacoEditor(node);
-		if (ed) try {
-			// setValue on the model preserves the editor/view; it replaces the
-			// whole document, which is what wasavi's write-back means.
-			var model = ed.getModel();
-			if (model) model.setValue(content); else ed.setValue(content);
-		} catch (ex) {}
+		if (ed) {
+			var model = ed.getModel && ed.getModel();
+			// Apply the write as a normal edit (executeEdits) rather than
+			// model.setValue(). setValue fires an `isFlush` change, which apps
+			// like LeetCode treat as a programmatic reset and skip for autosave;
+			// executeEdits looks like a real edit, so the host persists it (and
+			// undo history is preserved).
+			var applied = false;
+			if (model && typeof ed.executeEdits === 'function' && typeof model.getFullModelRange === 'function') {
+				try {
+					var range = model.getFullModelRange();
+					if (typeof ed.pushUndoStop === 'function') ed.pushUndoStop();
+					applied = ed.executeEdits('wasmavi', [{ range: range, text: content, forceMoveMarkers: true }]);
+					if (typeof ed.pushUndoStop === 'function') ed.pushUndoStop();
+				} catch (ex) { applied = false; }
+			}
+			if (!applied) {
+				try { if (model) model.setValue(content); else ed.setValue(content); } catch (ex) {}
+			}
+		}
 	}
 }, false);
 })(window,document);
