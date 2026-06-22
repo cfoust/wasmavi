@@ -28,3 +28,9 @@ src/unicode-tools/ucd/
 src/unicode-tools/unihan/
 dist/wasavi_chrome_web_store.zip
 test.log
+
+# vim.wasm integration: generated build artifacts (sources are the .ts files;
+# rebuild with `bun run build` and `scripts/build-vim-wasm.sh`)
+src/chrome/backend/sw.js
+src/chrome/frontend/vimwasm_frame.js
+src/chrome/frontend/vim-wasm/
