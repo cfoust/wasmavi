@@ -1,3 +1,29 @@
+# wasmavi — wasavi, but the editor is real Vim (WebAssembly)
+
+**wasmavi is a fork of [wasavi](https://github.com/akahuku/wasavi) that replaces
+its hand-written JavaScript vi engine with actual Vim compiled to WebAssembly
+([vim.wasm](https://github.com/rhysd/vim.wasm)).** The name is *wasavi* + *WASM*.
+
+What this fork adds:
+
+- **Real Vim** runs the editor (vim.wasm), rebuilt with emscripten **Asyncify**
+  so it needs no `SharedArrayBuffer` / cross-origin isolation and works on any
+  page. Your text is loaded into Vim; `:w` writes it back, `:q` closes.
+- **Manifest V3** — a small service-worker backend replaces the old (MV2,
+  DOM-bound) Kosian background page.
+- Works on plain `<textarea>`/`<input>` **and on Monaco code editors**
+  (e.g. LeetCode and CoderPad) — reading/writing the real document through
+  Monaco's API and detecting the filetype for syntax highlighting.
+- Configurable: render in the field's area or full screen, a startup **vimrc**
+  (the options page's "exrc" field), and a bundled colorscheme.
+
+Sources are TypeScript built with [Bun](https://bun.sh) (`bun run build`); the
+vim.wasm engine is built by `scripts/build-vim-wasm.sh`. Generated artifacts
+(the compiled engine and the bundled `.js`) are not committed — build them
+locally, then load `src/chrome` unpacked.
+
+---
+
 wasavi (VI editor for any web page)
 ====================================
 
