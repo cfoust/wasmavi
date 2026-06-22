@@ -17,10 +17,11 @@ What this fork adds:
 - Configurable: render in the field's area or full screen, a startup **vimrc**
   (the options page's "exrc" field), and a bundled colorscheme.
 
-Sources are TypeScript built with [Bun](https://bun.sh) (`bun run build`); the
-vim.wasm engine is built by `scripts/build-vim-wasm.sh`. Generated artifacts
-(the compiled engine and the bundled `.js`) are not committed — build them
-locally, then load `src/chrome` unpacked.
+This repo holds the extension **sources** (TypeScript). The compiled vim.wasm
+engine and the bundled `.js` are generated artifacts and are intentionally not
+committed; they're produced by the build in the umbrella project (which also
+contains the vim.wasm engine source, the Bun build script, and a test harness).
+Build those, then load `src/chrome` unpacked in Chrome (Developer mode).
 
 ---
 
