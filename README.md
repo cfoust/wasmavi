@@ -17,11 +17,24 @@ What this fork adds:
 - Configurable: render in the field's area or full screen, a startup **vimrc**
   (the options page's "exrc" field), and a bundled colorscheme.
 
-This repo holds the extension **sources** (TypeScript). The compiled vim.wasm
-engine and the bundled `.js` are generated artifacts and are intentionally not
-committed; they're produced by the build in the umbrella project (which also
-contains the vim.wasm engine source, the Bun build script, and a test harness).
-Build those, then load `src/chrome` unpacked in Chrome (Developer mode).
+### Build & run
+
+The compiled vim.wasm engine and the bundled `.js` are generated artifacts and
+are intentionally not committed — build them with [Bun](https://bun.sh) and the
+[emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html):
+
+```sh
+git clone --recursive https://github.com/cfoust/wasmavi.git
+cd wasmavi
+bun install
+bun run build:wasm   # builds vim.wasm (Asyncify) from the ./vim.wasm submodule; needs emsdk active
+bun run build        # bundles the extension TypeScript -> JavaScript
+```
+
+Then load `src/chrome` as an unpacked extension (`chrome://extensions` →
+Developer mode → Load unpacked). `bun run test` / `bun run typecheck` cover the
+service worker and types; `node test-harness/server.js` serves a standalone
+editor demo. See [INTEGRATION.md](INTEGRATION.md) for the full design.
 
 ---
 
