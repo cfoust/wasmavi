@@ -1437,7 +1437,8 @@ var readContentFromElement = (function () {
 		for (var e = element; e; e = e.parentNode) {
 			if (!e.classList) continue;
 			if (e.classList.contains('CodeMirror')
-			||  e.classList.contains('ace_editor')) {
+			||  e.classList.contains('ace_editor')
+			||  e.classList.contains('monaco-editor')) {
 				result = e;
 				break;
 			}
@@ -1695,7 +1696,8 @@ var writeContentToElement = (function () {
 		opts || (opts = {});
 
 		if (element.classList.contains('CodeMirror')
-		 || element.classList.contains('ace_editor')) {
+		 || element.classList.contains('ace_editor')
+		 || element.classList.contains('monaco-editor')) {
 			if (typeof content != 'string') {
 				return _('Invalid text format.');
 			}

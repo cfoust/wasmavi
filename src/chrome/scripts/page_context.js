@@ -21,6 +21,19 @@
 
 !(function(win,doc){
 
+// Find the Monaco editor instance whose DOM node corresponds to `node`.
+function findMonacoEditor (node) {
+	if (!win.monaco || !win.monaco.editor || !win.monaco.editor.getEditors) return null;
+	var editors;
+	try {editors = win.monaco.editor.getEditors()} catch (ex) {return null}
+	for (var i = 0; i < editors.length; i++) {
+		var dom = editors[i].getDomNode && editors[i].getDomNode();
+		if (!dom) continue;
+		if (dom === node || node.contains(dom) || dom.contains(node)) return editors[i];
+	}
+	return null;
+}
+
 doc.addEventListener('WasaviRequestGetContent', function (e) {
 	var className = e.detail;
 	var node = doc.getElementsByClassName(className)[0];
@@ -31,6 +44,10 @@ doc.addEventListener('WasaviRequestGetContent', function (e) {
 		try {result = node.CodeMirror.getValue()} catch (ex) {result = ''}
 	else if (node.classList.contains('ace_editor') && win.ace)
 		try {result = win.ace.edit(node).getValue()} catch(ex) {result = ''}
+	else if (node.classList.contains('monaco-editor')) {
+		var ed = findMonacoEditor(node);
+		if (ed) try {result = ed.getValue()} catch (ex) {result = ''}
+	}
 
 	var ev = doc.createEvent('CustomEvent');
 	ev.initCustomEvent('WasaviResponseGetContent', false, false, className + '\t' + result);
@@ -49,6 +66,15 @@ doc.addEventListener('WasaviRequestSetContent', function (e) {
 		try {node.CodeMirror.setValue(content)} catch (ex) {}
 	else if (node.classList.contains('ace_editor') && win.ace)
 		try {win.ace.edit(node).setValue(content)} catch(ex) {}
+	else if (node.classList.contains('monaco-editor')) {
+		var ed = findMonacoEditor(node);
+		if (ed) try {
+			// setValue on the model preserves the editor/view; it replaces the
+			// whole document, which is what wasavi's write-back means.
+			var model = ed.getModel();
+			if (model) model.setValue(content); else ed.setValue(content);
+		} catch (ex) {}
+	}
 }, false);
 })(window,document);
 
