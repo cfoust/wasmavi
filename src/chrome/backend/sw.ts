@@ -90,7 +90,9 @@ function loadConfig () {
 			fontFamily: DEFAULT_FONT,
 			quickActivation: false,
 			siteOverrides: false,
-			logMode: false
+			logMode: false,
+			// false = render in the text field's area; true = full screen
+			fullscreen: false
 		}, items => {
 			void chrome.runtime.lastError;
 			configCache = {
@@ -100,7 +102,8 @@ function loadConfig () {
 				fontFamily: items.fontFamily || DEFAULT_FONT,
 				quickActivation: !!items.quickActivation,
 				siteOverrides: items.siteOverrides || false,
-				logMode: !!items.logMode
+				logMode: !!items.logMode,
+				fullscreen: !!items.fullscreen
 			};
 			resolve(configCache);
 		});
@@ -166,11 +169,12 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
 
 	// editor frame asks for its boot payload (contains the field text)
 	case 'init':
-		waitForPayload(2000).then(payload => {
+		Promise.all([loadConfig(), waitForPayload(2000)]).then(([cfg, payload]: [any, any]) => {
 			sendResponse({
 				tabId: tabId,
 				extensionId: chrome.runtime.id,
-				fontFamily: (configCache && configCache.fontFamily) || DEFAULT_FONT,
+				fontFamily: cfg.fontFamily,
+				fullscreen: cfg.fullscreen,
 				payload: payload || null
 			});
 		});

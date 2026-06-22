@@ -164,6 +164,12 @@ function initPage (req) {
 		el.checked = true;
 	}
 
+	// editor size (full screen vs. in-place over the text field)
+	el = $('full-screen');
+	if (el && el.nodeName == 'INPUT' && el.type == 'checkbox') {
+		el.checked = !!req.fullscreen;
+	}
+
 	// log mode
 	el = $('log-mode');
 	if (el && el.nodeName == 'INPUT' && el.type == 'checkbox') {
@@ -385,6 +391,12 @@ function handleOptionsSave () {
 
 		items.push({key:'fstab', value:fstab});
 	})();
+
+	// editor size
+	el = $('full-screen');
+	if (el && el.nodeName == 'INPUT' && el.type == 'checkbox') {
+		items.push({key:'fullscreen', value:el.checked});
+	}
 
 	// log mode
 	el = $('log-mode');

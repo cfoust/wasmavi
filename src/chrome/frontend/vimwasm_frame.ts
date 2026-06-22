@@ -42,6 +42,7 @@ declare const WasaviExtensionWrapper: any;
 	var vim = null;            // VimWasm instance
 	var filePath = '';         // path of the buffer file in MEMFS
 	var terminated = false;
+	var fullscreen = false;    // false = render over the text field; true = maximize
 
 	function $ (id: string): any {
 		return document.getElementById(id);
@@ -116,6 +117,7 @@ declare const WasaviExtensionWrapper: any;
 		// the wrapper does not assign tabId from the init response itself;
 		// wasavi.js does this in install(). mirror it here.
 		channel.tabId = req.tabId;
+		fullscreen = !!req.fullscreen;
 		channel.setMessageListener(handleBackendMessage);
 
 		if (channel.isTopFrame()) {
@@ -141,12 +143,15 @@ declare const WasaviExtensionWrapper: any;
 	}
 
 	function start () {
-		// 1. let the agent register us and reveal/size the frame.
+		// 1. let the agent register us. The agent already sized the iframe over
+		//    the target element; only grow it to full screen when configured.
 		notifyToParent('initialized', {
 			height: window.innerHeight,
 			childTabId: channel.tabId
 		});
-		notifyToParent('window-state', {state: 'maximized'});
+		if (fullscreen) {
+			notifyToParent('window-state', {state: 'maximized'});
+		}
 
 		// 2. refuse early if the platform cannot run vim.wasm.
 		var incompatible = checkBrowserCompatibility();
@@ -155,8 +160,9 @@ declare const WasaviExtensionWrapper: any;
 			return;
 		}
 
-		// 3. start vim once the iframe has reached its maximized size.
-		waitForViewport(400).then(startVim).catch(function (err) {
+		// 3. start vim once the iframe has settled at its final size (a resize
+		//    arrives when maximizing; otherwise this falls through on timeout).
+		waitForViewport(fullscreen ? 400 : 50).then(startVim).catch(function (err) {
 			showError(err);
 		});
 	}
