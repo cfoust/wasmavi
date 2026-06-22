@@ -593,6 +593,43 @@ function isMonacoInput (target) {
 	return !!(target && target.closest && target.closest('.monaco-editor'));
 }
 
+// Monaco/VS Code language id -> file extension, for filetype detection.
+var MONACO_LANG_EXT = {
+	python:'py', javascript:'js', javascriptreact:'jsx', typescript:'ts', typescriptreact:'tsx',
+	c:'c', cpp:'cpp', csharp:'cs', java:'java', go:'go', rust:'rs', ruby:'rb', php:'php',
+	kotlin:'kt', swift:'swift', scala:'scala', dart:'dart', r:'r', perl:'pl', lua:'lua',
+	haskell:'hs', elixir:'ex', erlang:'erl', clojure:'clj', ocaml:'ml', fsharp:'fs',
+	sql:'sql', shell:'sh', shellscript:'sh', bash:'sh', powershell:'ps1', bat:'bat',
+	html:'html', css:'css', scss:'scss', less:'less', json:'json', jsonc:'json',
+	yaml:'yaml', xml:'xml', toml:'toml', ini:'ini', markdown:'md', dockerfile:'dockerfile',
+	makefile:'mk', graphql:'graphql', vue:'vue', objective_c:'m', 'objective-c':'m', plaintext:'txt'
+};
+
+// Suggest a buffer filename for a Monaco editor container so Vim can detect the
+// filetype (which drives syntax highlighting and indentation).
+function getMonacoFileName (container) {
+	if (!container || !container.getAttribute) return null;
+
+	// 1. a real path in data-uri (e.g. CoderPad's file:///tmp/project/main.py)
+	var uri = container.getAttribute('data-uri') || '';
+	var m = /([^\/\\?#]+\.[A-Za-z0-9_]+)(?:[?#].*)?$/.exec(uri);
+	if (m) return m[1];
+
+	// 2. the Monaco language id (e.g. LeetCode's data-mode-id="python3"), looked
+	//    up on the container or any ancestor. Trailing version digits are dropped
+	//    so "python3" maps like "python".
+	for (var e = container; e; e = e.parentElement) {
+		if (!e.getAttribute) continue;
+		var lang = e.getAttribute('data-mode-id');
+		if (!lang) continue;
+		lang = lang.toLowerCase();
+		var ext = MONACO_LANG_EXT[lang] || MONACO_LANG_EXT[lang.replace(/[0-9.]+$/, '')];
+		if (ext) return 'buffer.' + ext;
+		break;
+	}
+	return null;
+}
+
 function isLaunchableElement (target) {
 	return target.isContentEditable && allowedElements.enableContentEditable
 		|| target.nodeName == 'BODY' && allowedElements.enablePage
@@ -861,6 +898,7 @@ var Agent = (function () {
 			nodeName: element.nodeName,
 			nodePath: getNodePath(element),
 			elementType: element.type,
+			fileName: getMonacoFileName(element),
 			setargs: siteOverrides.setargs(element) || '',
 			selectionStart: element.selectionStart || 0,
 			selectionEnd: element.selectionEnd || 0,

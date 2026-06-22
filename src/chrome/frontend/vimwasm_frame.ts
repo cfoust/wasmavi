@@ -192,7 +192,12 @@ declare const WasaviExtensionWrapper: any;
 	}
 
 	function startVim () {
-		var name = sanitizeName(boot.id || boot.nodeName || 'buffer') + '.txt';
+		// Prefer a filename the agent derived from the editor (e.g. main.py from a
+		// Monaco data-uri or data-mode-id) so Vim detects the filetype; otherwise
+		// fall back to a generic .txt name.
+		var name = boot.fileName ?
+			sanitizeName(boot.fileName) :
+			(sanitizeName(boot.id || boot.nodeName || 'buffer') + '.txt');
 		filePath = HOME + '/' + name;
 
 		var dotvim = HOME + '/.vim';
@@ -202,6 +207,7 @@ declare const WasaviExtensionWrapper: any;
 		// user's startup Vimscript (the "exrc" field in the options page).
 		files[dotvim + '/vimrc'] =
 			'set nocompatible\n' +
+			'filetype plugin indent on\n' +
 			'syntax enable\n' +
 			'silent! colorscheme vividchalk\n' +
 			(typeof exrc === 'string' ? exrc : '') + '\n';
