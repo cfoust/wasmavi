@@ -110,7 +110,7 @@ document.getElementById('open').addEventListener('click', () => {
 	vim.start({
 		clipboard: !!navigator.clipboard,
 		files,
-		cmdArgs: ['-n', '-c', autocmd, FILE],
+		cmdArgs: ['-n', '-c', 'set mouse=a', '-c', autocmd, FILE],
 	});
 });
 </script>

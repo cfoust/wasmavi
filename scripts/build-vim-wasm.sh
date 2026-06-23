@@ -93,7 +93,7 @@ link() {
         -sINVOKE_RUN=1 -sEXIT_RUNTIME=1 -sALLOW_MEMORY_GROWTH=1 \
         -sASYNCIFY -sASYNCIFY_STACK_SIZE=65536 \
         "-sASYNCIFY_IMPORTS=['vimwasm_wait_for_event','vimwasm_read_clipboard']" \
-        "-sEXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown','_gui_wasm_handle_drop','_gui_wasm_set_clip_avail','_gui_wasm_do_cmdline','_gui_wasm_emsg','_malloc','_free']" \
+        "-sEXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown','_gui_wasm_handle_mouse','_gui_wasm_handle_drop','_gui_wasm_set_clip_avail','_gui_wasm_do_cmdline','_gui_wasm_emsg','_malloc','_free']" \
         "-sEXPORTED_RUNTIME_METHODS=['cwrap','ccall','UTF8ToString','stringToUTF8','lengthBytesUTF8','HEAPU8']" \
         --preload-file usr --preload-file tutor --preload-file home \
         -Os

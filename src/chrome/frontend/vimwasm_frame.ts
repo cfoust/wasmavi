@@ -258,6 +258,9 @@ declare const WasaviExtensionWrapper: any;
 			'set nocompatible\n' +
 			'filetype plugin indent on\n' +
 			'syntax enable\n' +
+			// mouse=a: forward click/drag/scroll to Vim in every mode (the
+			// agent's iframe captures the canvas mouse events and relays them).
+			'set mouse=a\n' +
 			// the "+" (and "*") register is the system clipboard, as in real Vim;
 			// default y/d/p stay in the in-memory unnamed register. Use "+y / "+p
 			// for the system clipboard, or set clipboard=unnamed[plus] in exrc.
