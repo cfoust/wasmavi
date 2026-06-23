@@ -56,6 +56,10 @@ import {VimWasm, checkBrowserCompatibility} from '../src/chrome/frontend/vim-was
 const WORKER = '../src/chrome/frontend/vim-wasm/vim.js';
 const HOME = '/home/web_user';
 const FILE = HOME + '/buffer.txt';
+const DOTVIM = HOME + '/.vim';
+const COLORSCHEMES = ['vividchalk', 'brogrammer', 'birds-of-paradise'];
+// ?cs=<name> picks the colorscheme (default vividchalk), mirroring the extension
+const CS = new URLSearchParams(location.search).get('cs') || 'vividchalk';
 
 const ta = document.getElementById('ta');
 const editor = document.getElementById('editor');
@@ -107,10 +111,19 @@ document.getElementById('open').addEventListener('click', () => {
 	const files = {}; files[FILE] = ta.value;
 	const autocmd = "autocmd BufWritePost * silent! execute 'export ' . fnameescape(expand('%:p'))";
 
+	// fetch all bundled colorschemes into ~/.vim/colors, then select one
+	const fetchFiles = {};
+	for (const cs of COLORSCHEMES) {
+		fetchFiles[DOTVIM + '/colors/' + cs + '.vim'] =
+			new URL('../src/chrome/frontend/colors/' + cs + '.vim', location.href).href;
+	}
+
 	vim.start({
 		clipboard: !!navigator.clipboard,
+		dirs: [DOTVIM + '/colors'],
 		files,
-		cmdArgs: ['-n', '-c', 'set mouse=a', '-c', autocmd, FILE],
+		fetchFiles,
+		cmdArgs: ['-n', '-c', 'set mouse=a', '-c', 'silent! colorscheme ' + CS, '-c', autocmd, FILE],
 	});
 });
 </script>

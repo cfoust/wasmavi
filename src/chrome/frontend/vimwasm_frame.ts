@@ -37,6 +37,12 @@ declare const WasaviExtensionWrapper: any;
 	// path of the buffer file inside vim's MEMFS
 	var HOME = '/home/web_user';
 
+	// Colorschemes bundled in frontend/colors/ and fetched into ~/.vim/colors so
+	// they can be selected with `:colorscheme <name>` or the colorscheme option.
+	// To add one: drop NAME.vim here, in this list, and in web_accessible_resources.
+	var BUNDLED_COLORSCHEMES = ['vividchalk', 'brogrammer', 'birds-of-paradise'];
+	var DEFAULT_COLORSCHEME = 'vividchalk';
+
 	var channel = null;        // WasaviExtensionWrapper instance
 	var boot = null;           // boot payload from the agent (the "targetElement")
 	var vim = null;            // VimWasm instance
@@ -44,6 +50,7 @@ declare const WasaviExtensionWrapper: any;
 	var terminated = false;
 	var fullscreen = false;    // false = render over the text field; true = maximize
 	var exrc = '';             // startup Vimscript (vimrc), from the options page
+	var colorscheme = DEFAULT_COLORSCHEME;  // active colorscheme, from the options page
 
 	function $ (id: string): any {
 		return document.getElementById(id);
@@ -120,6 +127,11 @@ declare const WasaviExtensionWrapper: any;
 		channel.tabId = req.tabId;
 		fullscreen = !!req.fullscreen;
 		exrc = typeof req.exrc === 'string' ? req.exrc : '';
+		// only honor a configured scheme we actually bundle; otherwise the default
+		if (typeof req.colorscheme === 'string' &&
+			BUNDLED_COLORSCHEMES.indexOf(req.colorscheme) !== -1) {
+			colorscheme = req.colorscheme;
+		}
 		channel.setMessageListener(handleBackendMessage);
 
 		if (channel.isTopFrame()) {
@@ -264,7 +276,7 @@ declare const WasaviExtensionWrapper: any;
 			// the "+" (and "*") register is the system clipboard, as in real Vim;
 			// default y/d/p stay in the in-memory unnamed register. Use "+y / "+p
 			// for the system clipboard, or set clipboard=unnamed[plus] in exrc.
-			'silent! colorscheme vividchalk\n' +
+			'silent! colorscheme ' + colorscheme + '\n' +
 			(typeof exrc === 'string' ? exrc : '') + '\n';
 
 		vim = new VimWasm({
@@ -290,10 +302,15 @@ declare const WasaviExtensionWrapper: any;
 		if (boot.readOnly) cmdArgs.push('-R');
 		cmdArgs.push(filePath);
 
-		// Fetch the bundled colorscheme(s) into ~/.vim/colors so `colorscheme`
-		// works. The worker fetches these before Vim's main loop starts.
+		// Fetch every bundled colorscheme into ~/.vim/colors so `colorscheme`
+		// (and the user's exrc) can select any of them. The worker fetches these
+		// before Vim's main loop starts.
 		var fetchFiles = {};
-		fetchFiles[dotvim + '/colors/vividchalk.vim'] = resourceURL('frontend/colors/vividchalk.vim');
+		for (var ci = 0; ci < BUNDLED_COLORSCHEMES.length; ci++) {
+			var cs = BUNDLED_COLORSCHEMES[ci];
+			fetchFiles[dotvim + '/colors/' + cs + '.vim'] =
+				resourceURL('frontend/colors/' + cs + '.vim');
+		}
 
 		// NOTE: do not pass dirs:[HOME] - /home/web_user already exists in the
 		// vim.data image, and FS.mkdir() on it throws ("FS error"). ~/.vim is

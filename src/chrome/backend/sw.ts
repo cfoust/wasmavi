@@ -94,7 +94,9 @@ function loadConfig () {
 			// false = render in the text field's area; true = full screen
 			fullscreen: false,
 			// startup Vimscript (becomes the editor's vimrc)
-			exrc: ''
+			exrc: '',
+			// active colorscheme (must be one bundled in frontend/colors/)
+			colorscheme: 'vividchalk'
 		}, items => {
 			void chrome.runtime.lastError;
 			configCache = {
@@ -106,7 +108,8 @@ function loadConfig () {
 				siteOverrides: items.siteOverrides || false,
 				logMode: !!items.logMode,
 				fullscreen: !!items.fullscreen,
-				exrc: typeof items.exrc === 'string' ? items.exrc : ''
+				exrc: typeof items.exrc === 'string' ? items.exrc : '',
+				colorscheme: typeof items.colorscheme === 'string' ? items.colorscheme : 'vividchalk'
 			};
 			resolve(configCache);
 		});
@@ -179,6 +182,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
 				fontFamily: cfg.fontFamily,
 				fullscreen: cfg.fullscreen,
 				exrc: cfg.exrc,
+				colorscheme: cfg.colorscheme,
 				payload: payload || null
 			});
 		});

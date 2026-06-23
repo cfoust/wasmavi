@@ -55,7 +55,9 @@
         "frontend/vim-wasm/vim.js",
         "frontend/vim-wasm/vim.wasm",
         "frontend/vim-wasm/vim.data",
-        "frontend/colors/vividchalk.vim"
+        "frontend/colors/vividchalk.vim",
+        "frontend/colors/brogrammer.vim",
+        "frontend/colors/birds-of-paradise.vim"
       ],
       "matches": [
         "http://*/*",
