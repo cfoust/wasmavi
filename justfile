@@ -59,8 +59,13 @@ tag:
             fs.writeFileSync(f, next);
         }
     ' "$ver"
+    # Publish to the fork that hosts CI/releases (cfoust/wasmavi), whether it is
+    # named origin or fork in this checkout; fall back to origin.
+    remote="$(git remote -v | awk '/cfoust\/wasmavi(\.git)?[[:space:]].*\(push\)/{print $1; exit}')"
+    remote="${remote:-origin}"
+    echo "Pushing to remote '$remote'"
     git commit -m "chore(release): v$ver" -- package.json src/chrome/manifest.json
     git tag -a "v$ver" -m "v$ver"
-    git push origin HEAD
-    git push origin "v$ver"
+    git push "$remote" HEAD
+    git push "$remote" "v$ver"
     echo "Pushed v$ver — CI will build and publish the release."
