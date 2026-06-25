@@ -34,3 +34,7 @@ test.log
 src/chrome/backend/sw.js
 src/chrome/frontend/vimwasm_frame.js
 src/chrome/frontend/vim-wasm/
+
+# crx packing (`just crx`): signing keys are secret, the .crx is a build output
+key.pem
+*.crx

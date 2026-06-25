@@ -6,12 +6,12 @@
 		"message": "ja"
 	},
 	"wasavi_name": {
-		"message": "wasavi",
-		"description": "wasavi"
+		"message": "wasmavi",
+		"description": "wasmavi"
 	},
 	"wasavi_desc": {
-		"message": "web ページ上の vi エディタ",
-		"description": "vi editor for any web page."
+		"message": "WebAssembly にコンパイルした本物の Vim で、あらゆるテキスト欄を編集",
+		"description": "Edit any text field with real Vim, compiled to WebAssembly."
 	},
 	"option_title": {
 		"message": "wasavi のオプション",

@@ -30,6 +30,28 @@ typecheck:
 test:
     bun run test
 
+# Pack the built extension into a signed .crx for self-hosting / sideloading
+# (NOT needed for the Chrome Web Store — that takes the zip from `just tag`).
+# Uses `bunx crx` (no local Chrome). The signing key determines the extension
+# ID; it is generated on first run at $CRX_KEY (default key.pem) and must be
+# kept SECRET — never commit it. Depends on `build` so the engine/bundle exist.
+# Usage: `just crx`  (override key path with `CRX_KEY=/path/to/key.pem just crx`)
+crx: build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    key="${CRX_KEY:-key.pem}"
+    if [ ! -f "$key" ]; then
+        echo "No signing key at '$key' — generating one. Keep it SECRET; do not commit."
+        dir="$(mktemp -d)"
+        bunx crx keygen "$dir" >/dev/null
+        mv "$dir/key.pem" "$key"
+        rmdir "$dir" 2>/dev/null || true
+    fi
+    ver="$(bun -e 'console.log(require("./package.json").version)')"
+    out="wasmavi-v$ver.crx"
+    bunx crx pack src/chrome --private-key "$key" --output "$out"
+    echo "Wrote $out (extension ID derives from '$key')."
+
 # Cut a release: derive a CalVer version (YYYY.M.D, with a .N suffix for the
 # Nth release in a day), write it to package.json + manifest.json, commit, tag,
 # and push. CI (release.yml) then builds the extension and publishes the release.

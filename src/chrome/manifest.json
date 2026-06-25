@@ -14,11 +14,6 @@
     "tabs", "clipboardRead", "clipboardWrite", "contextMenus",
     "storage"
   ],
-  "host_permissions": [
-    "https://*.dropboxapi.com/*",
-    "https://*.google.com/*", "https://*.googleapis.com/*", "https://*.googleusercontent.com/*",
-    "https://apis.live.net/*"
-  ],
   "background": {
     "service_worker": "backend/sw.js"
   },
@@ -69,5 +64,5 @@
     "page": "options.html",
     "open_in_tab": true
   },
-  "homepage_url": "http://appsweets.net/"
+  "homepage_url": "https://github.com/cfoust/wasmavi"
 }
