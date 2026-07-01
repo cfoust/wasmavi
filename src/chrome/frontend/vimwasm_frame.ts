@@ -262,6 +262,10 @@ declare const WasaviExtensionWrapper: any;
 		filePath = HOME + '/' + name;
 
 		var dotvim = HOME + '/.vim';
+		// IDBFS-backed directory (mounted via persistentDirs below) that survives
+		// the otherwise in-memory filesystem. Holds Vim's viminfo file so
+		// registers, marks, and history persist across editing sessions.
+		var persistDir = HOME + '/.persist';
 		var files = {};
 		files[filePath] = typeof boot.value === 'string' ? boot.value : '';
 		// The editor's vimrc: sensible defaults, a bundled colorscheme, then the
@@ -273,9 +277,33 @@ declare const WasaviExtensionWrapper: any;
 			// mouse=a: forward click/drag/scroll to Vim in every mode (the
 			// agent's iframe captures the canvas mouse events and relays them).
 			'set mouse=a\n' +
+			// macOS Cmd+V -> system-clipboard paste. vim.wasm is built without
+			// Cmd-key support, so the frame's keydown handler turns Cmd+V into
+			// <F13>; map it per-mode so paste works while inserting, on the
+			// : / search prompt, and in normal/visual mode. "+ is the system
+			// clipboard; <C-r><C-o>+ inserts literally (no auto-indent doubling).
+			'inoremap <silent> <F13> <C-r><C-o>+\n' +
+			'cnoremap <F13> <C-r>+\n' +
+			'nnoremap <silent> <F13> "+p\n' +
+			'xnoremap <silent> <F13> "+p\n' +
 			// the "+" (and "*") register is the system clipboard, as in real Vim;
 			// default y/d/p stay in the in-memory unnamed register. Use "+y / "+p
 			// for the system clipboard, or set clipboard=unnamed[plus] in exrc.
+			//
+			// Persist registers, marks, and search/command history across sessions
+			// via Vim's viminfo. The file lives in ~/.persist (IDBFS-backed, see
+			// persistentDirs below): the runtime repopulates that dir from
+			// IndexedDB before this vimrc runs and syncs it back on exit.
+			//
+			// We read/write the file with the path spelled out explicitly
+			// (rviminfo!/wviminfo!) rather than relying on the 'viminfofile'
+			// option, which this vim.wasm build does not honor - with it, Vim's
+			// automatic read/write falls back to the non-persistent default
+			// ~/.viminfo and nothing lands in ~/.persist. 'viminfo' still governs
+			// WHAT is saved; <1000/s100 keep sizeable registers (multi-line yanks).
+			"set viminfo='100,<1000,s100,h\n" +
+			'silent! rviminfo! ' + persistDir + '/viminfo\n' +
+			'autocmd VimLeavePre * silent! wviminfo! ' + persistDir + '/viminfo\n' +
 			'silent! colorscheme ' + colorscheme + '\n' +
 			(typeof exrc === 'string' ? exrc : '') + '\n';
 
@@ -314,10 +342,13 @@ declare const WasaviExtensionWrapper: any;
 
 		// NOTE: do not pass dirs:[HOME] - /home/web_user already exists in the
 		// vim.data image, and FS.mkdir() on it throws ("FS error"). ~/.vim is
-		// created by the runtime; ~/.vim/colors is not, so create it here.
+		// created by the runtime; ~/.vim/colors and ~/.persist are not, so create
+		// them here. ~/.persist is then mounted as IDBFS (persistentDirs) - it
+		// must exist as a directory before the runtime mounts over it.
 		vim.start({
 			clipboard: true,
-			dirs: [dotvim + '/colors'],
+			dirs: [dotvim + '/colors', persistDir],
+			persistentDirs: [persistDir],
 			files: files,
 			fetchFiles: fetchFiles,
 			cmdArgs: cmdArgs
